@@ -1,6 +1,6 @@
 const express = require('express')
-const pool = require('./config')
 const cors = require('cors')
+const pool = require('./config')
 
 const app = express()
 app.use(express.json())
@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 
 app.get('/api/treks', async (req, res) => {
 	try {
-		const { rows } = await pool.query('SELECT * FROM treks;')
+		const { rows } = await pool.query('SELECT * FROM treks ORDER BY id;')
 		res.json(rows)
 	} catch (error) {
 		console.log(error)
@@ -36,24 +36,13 @@ app.get('/api/treks/:id', async (req, res) => {
 })
 
 app.post('/api/treks', async (req, res) => {
-	// dummy data kuniks front endi pole
-	const dummyData = {
-		name: 'Test matk',
-		latitude: '34.5',
-		longitude: '23.4',
-		price: '10',
-		image_url: 'https://media.voog.com/0000/0030/9870/photos/Kakerdaja%20rabarada-18_huge.jpg',
-		start_time: '01.01.24 19:00',
-		end_time: '02.01.24 10:00',
-		description: 'Öine matk',
-	}
 	try {
-		pool.query(`
+		const { rows } = await pool.query(`
             INSERT INTO treks (name, latitude, longitude, price, image_url, start_time, end_time, description)
-            VALUES ('${dummyData.name}', '${dummyData.latitude}', '${dummyData.longitude}', '${dummyData.price}', '${dummyData.image_url}', '${dummyData.start_time}', '${dummyData.end_time}', '${dummyData.description}');
+            VALUES ('${req.body.name}', '${req.body.latitude}', '${req.body.longitude}', '${req.body.price}', '${req.body.image_url}', '${req.body.start_time}', '${req.body.end_time}', '${req.body.description}')
+			RETURNING id;
         `)
-		// Mis siin oleks õige tagastada?
-		res.send(dummyData)
+		res.status(201).json(rows)
 	} catch (error) {
 		console.log(error)
 		res.status(500).send(error.message)
@@ -62,19 +51,14 @@ app.post('/api/treks', async (req, res) => {
 
 app.put('/api/treks/:id', async (req, res) => {
 	const idFromParams = parseInt(req.params.id, 10)
-	// dummy data kuniks front endi pole
-	const objectWithNewKeyValues = {
-		name: 'Uusim matk',
-		price: '4',
-	}
-	// Kuidas saaks dünaamiliselt SET väärtusi query-sse anda, st kui ei ole teada, kui mitu ja milliseid veerge on vaja uuendada?
+	console.log('req', req.body)
 	try {
 		pool.query(`
             UPDATE treks
-	        SET name='${objectWithNewKeyValues.name}', price='${objectWithNewKeyValues.price}'
+	        SET name='${req.body.name}', latitude='${req.body.latitude}', longitude='${req.body.longitude}', price='${req.body.price}', image_url='${req.body.image_url}', start_time='${req.body.start_time}', end_time='${req.body.end_time}', description='${req.body.description}'
             WHERE id=${idFromParams}
 	    `)
-		res.send(objectWithNewKeyValues)
+		res.status(201).json(req.body)
 	} catch (error) {
 		console.log(error)
 		res.status(500).send(error.message)
